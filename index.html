@@ -14,6 +14,10 @@
      #qr-reader {
          width: 100%;
      }
+
+     .hide {
+         display: none;
+     }
     </style>
 
 
@@ -21,39 +25,57 @@
   <body>
 
     <div class="container">
-      <h2>Passkey QR Scanner</h2>
+      <h2>QR Scanner</h2>
       <div id="qr-reader"></div>
-      <div id="qr-reader-results">
+      <div id="instructions">
+        Scan a qr code to begin
+      </div>
+    </div>
+    <div class="hide" id="qr-reader-results">
+        <a  id="open-button" href="#" type="button" class="btn btn-primary btn-block">Open</a>
+        <div id="text-result"></div>
+        </div>
+
+      </div>
     </div>
 
-    <script src="/html5-qrcode.min.js"></script>
+    <script src="html5-qrcode.min.js" type="text/javascript"></script>
     <script>
      var resultContainer = document.getElementById('qr-reader-results');
      var lastResult;
 
-     function onScanSuccess(decodedText, decodedResult) {
-       if (decodedText !== lastResult) {
-         lastResult = decodedText;
-         console.log(`Scan result ${decodedText}`, decodedResult);
-         if (decodedText.startsWith("FIDO:/") || decodedText.startsWith("FIDO:/")) {
-           open(decodedText);
-         } else {
-           document.getElementById('qr-reader-results').innerHTML = "QR code is not a Passkey";
-         }
-       }
-     }
+     const html5QrCode = new Html5Qrcode("qr-reader");
 
-     var html5QrcodeScanner = new Html5QrcodeScanner(
-         "qr-reader",
-         {
-           fps: 10,
-           qrbox: 250,
-           supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-           videoConstraints: { facingMode: { exact: "environment" } },
+
+     Html5Qrcode.getCameras().then(devices => {
+         console.log("devices", devices)
+         if (!devices || devices.length < 1) {
+             document.getElementById("instructions").innerText = "No Camera Detected";
          }
 
-     );
-     html5QrcodeScanner.render(onScanSuccess);
+         const config = {
+             fps: 10,
+             supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+             videoConstraints: { facingMode: { exact: "environment" } },
+         };
+
+
+         function onScanSuccess(decodedText, decodedResult) {
+             if (decodedText !== lastResult) {
+                 lastResult = decodedText;
+                 document.getElementById("qr-reader-results").classList.remove("hide");
+                 document.getElementById("instructions").classList.add("hide");
+                 document.getElementById('text-result').innerText = decodedText;
+                 document.getElementById('open-button').href = decodedText;
+             }
+         }
+
+         html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
+
+     }).catch(err => {
+         console.log("err", err)
+         document.getElementById("instructions").innerText = "No Camera Detected";
+     });
     </script>
 
   </body>
